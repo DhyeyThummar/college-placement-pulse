@@ -20,7 +20,7 @@ import { saveAs } from 'file-saver';
 const Compare = () => {
   const [collegeA, setCollegeA] = useState('');
   const [collegeB, setCollegeB] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('all');
   const [selectedYear, setSelectedYear] = useState('2024');
   const [minCGPA, setMinCGPA] = useState('7.0');
 
@@ -28,7 +28,7 @@ const Compare = () => {
     return placementData.filter(item => 
       item.college === collegeName &&
       item.year === parseInt(selectedYear) &&
-      (!selectedBranch || item.branch === selectedBranch) &&
+      (selectedBranch === 'all' || item.branch === selectedBranch) &&
       item.minCGPA >= parseFloat(minCGPA)
     );
   };
@@ -145,7 +145,7 @@ const Compare = () => {
                     <SelectValue placeholder="All Branches" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Branches</SelectItem>
+                    <SelectItem value="all">All Branches</SelectItem>
                     {branches.map(branch => (
                       <SelectItem key={branch} value={branch}>
                         {branch}

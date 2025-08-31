@@ -20,15 +20,15 @@ import { colleges, branches, placementData } from '../data/placementData';
 import { saveAs } from 'file-saver';
 
 const Trends = () => {
-  const [selectedCollege, setSelectedCollege] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedCollege, setSelectedCollege] = useState('all');
+  const [selectedBranch, setSelectedBranch] = useState('all');
   const [minCGPA, setMinCGPA] = useState('7.0');
 
   const getFilteredData = () => {
     return placementData
       .filter(item => 
-        (!selectedCollege || item.college === selectedCollege) &&
-        (!selectedBranch || item.branch === selectedBranch) &&
+        (selectedCollege === 'all' || item.college === selectedCollege) &&
+        (selectedBranch === 'all' || item.branch === selectedBranch) &&
         item.minCGPA >= parseFloat(minCGPA)
       )
       .reduce((acc, item) => {
@@ -107,7 +107,7 @@ const Trends = () => {
                     <SelectValue placeholder="All Colleges" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Colleges</SelectItem>
+                    <SelectItem value="all">All Colleges</SelectItem>
                     {colleges.map(college => (
                       <SelectItem key={college.id} value={college.name}>
                         {college.name}
@@ -124,7 +124,7 @@ const Trends = () => {
                     <SelectValue placeholder="All Branches" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Branches</SelectItem>
+                    <SelectItem value="all">All Branches</SelectItem>
                     {branches.map(branch => (
                       <SelectItem key={branch} value={branch}>
                         {branch}
