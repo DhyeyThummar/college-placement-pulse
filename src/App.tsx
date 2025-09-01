@@ -15,6 +15,8 @@ import UserDashboard from "./pages/UserDashboard";
 import Compare from "./pages/Compare";
 import Trends from "./pages/Trends";
 import AdminDashboard from "./pages/AdminDashboard";
+import CollegeDashboard from "./pages/CollegeDashboard";
+import AllColleges from "./pages/AllColleges";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,8 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/trends" element={<Trends />} />
               <Route path="/compare" element={<Compare />} />
+              <Route path="/colleges" element={<AllColleges />} />
+              <Route path="/college/:collegeId" element={<CollegeDashboard />} />
               <Route 
                 path="/dashboard" 
                 element={
