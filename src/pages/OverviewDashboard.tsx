@@ -271,7 +271,10 @@ const OverviewDashboard = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value }) => `${name.split(' ')[0]}: ${value}%`}
+                    label={({ name, value }) => {
+                      const branchName = name && typeof name === 'string' ? name.split(' ')[0] : name || 'Unknown';
+                      return `${branchName}: ${value}%`;
+                    }}
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="placementRate"
