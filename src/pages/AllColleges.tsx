@@ -23,13 +23,13 @@ const AllColleges = () => {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState("2024");
   const [sortBy, setSortBy] = useState("placementRate");
-  const [collegeType, setCollegeType] = useState("");
+  const [collegeType, setCollegeType] = useState("all");
 
   const collegeData = useMemo(() => {
     let data = getCollegeWiseData(parseInt(selectedYear));
     
     // Filter by college type
-    if (collegeType) {
+    if (collegeType !== "all") {
       data = data.filter(d => {
         const college = colleges.find(c => c.id === d.collegeId);
         return college?.type === collegeType;
@@ -210,7 +210,7 @@ const AllColleges = () => {
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="Government">Government</SelectItem>
                     <SelectItem value="Private">Private</SelectItem>
                   </SelectContent>
