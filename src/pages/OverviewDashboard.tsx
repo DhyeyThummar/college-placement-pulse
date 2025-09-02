@@ -271,8 +271,8 @@ const OverviewDashboard = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value }) => {
-                      const branchName = name && typeof name === 'string' ? name.split(' ')[0] : name || 'Unknown';
+                    label={({ branch, value }) => {
+                      const branchName = branch && typeof branch === 'string' ? branch.split(' ')[0] : branch || 'Unknown';
                       return `${branchName}: ${value}%`;
                     }}
                     outerRadius={100}
