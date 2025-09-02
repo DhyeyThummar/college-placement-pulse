@@ -344,3 +344,40 @@ export const getTopRecruiters = (collegeId = null, year = 2024, limit = 10) => {
     .sort((a, b) => b.totalPlacements - a.totalPlacements)
     .slice(0, limit);
 };
+
+export const getSectorWiseData = (collegeId = null, year = 2024) => {
+  let data = placementData.filter(d => d.year === year);
+  if (collegeId) {
+    data = data.filter(d => d.collegeId === collegeId);
+  }
+  
+  const sectorStats = {};
+  
+  data.forEach(d => {
+    d.companyPlacements.forEach(cp => {
+      if (!sectorStats[cp.sector]) {
+        sectorStats[cp.sector] = {
+          sector: cp.sector,
+          placements: 0,
+          companies: new Set(),
+          totalPackage: 0,
+          count: 0
+        };
+      }
+      
+      sectorStats[cp.sector].placements += cp.placements;
+      sectorStats[cp.sector].companies.add(cp.company);
+      sectorStats[cp.sector].totalPackage += cp.avgPackage * cp.placements;
+      sectorStats[cp.sector].count += cp.placements;
+    });
+  });
+  
+  return Object.values(sectorStats)
+    .map(stat => ({
+      sector: stat.sector,
+      placements: stat.placements,
+      companies: stat.companies.size,
+      avgPackage: stat.count > 0 ? Math.round((stat.totalPackage / stat.count) * 100) / 100 : 0
+    }))
+    .sort((a, b) => b.placements - a.placements);
+};

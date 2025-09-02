@@ -26,8 +26,8 @@ const OverviewDashboard = () => {
   const overallStats = useMemo(() => getPlacementStats(), []);
   const trendData = useMemo(() => getTrendData(), []);
   const topRecruiters = useMemo(() => getTopRecruiters(null, parseInt(selectedYear), 15), [selectedYear]);
-  const branchData = useMemo(() => getBranchWiseData(parseInt(selectedYear)), [selectedYear]);
-  const sectorData = useMemo(() => getSectorWiseData(parseInt(selectedYear)), [selectedYear]);
+  const branchData = useMemo(() => getBranchWiseData(null, parseInt(selectedYear)), [selectedYear]);
+  const sectorData = useMemo(() => getSectorWiseData(null, parseInt(selectedYear)), [selectedYear]);
 
   const collegeData = useMemo(() => {
     let data = getCollegeWiseData(parseInt(selectedYear));
@@ -94,7 +94,7 @@ const OverviewDashboard = () => {
         'Placement Rate (%)': college.placementRate,
         'Average Package (LPA)': college.avgPackage,
         'Highest Package (LPA)': college.highestPackage,
-        'Top Recruiter': college.topRecruiter
+        'Top Recruiter': college.topRecruiter || 'N/A'
       };
     });
 
@@ -400,7 +400,7 @@ const OverviewDashboard = () => {
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Placements:</span>
-                      <span className="font-medium text-foreground">{recruiter.placements}</span>
+                      <span className="font-medium text-foreground">{recruiter.totalPlacements}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Avg Package:</span>
