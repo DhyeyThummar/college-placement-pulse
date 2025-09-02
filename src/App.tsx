@@ -12,6 +12,7 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
+import OverviewDashboard from "./pages/OverviewDashboard";
 import Compare from "./pages/Compare";
 import Trends from "./pages/Trends";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -33,6 +34,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/overview" element={<OverviewDashboard />} />
               <Route path="/trends" element={<Trends />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/colleges" element={<AllColleges />} />

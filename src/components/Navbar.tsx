@@ -41,6 +41,7 @@ const Navbar = () => {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-1">
             <NavLink to="/" icon={Home} label="Home" isActive={isActive('/')} />
+            <NavLink to="/overview" icon={BarChart3} label="Overview" isActive={isActive('/overview')} />
             <NavLink to="/colleges" icon={GraduationCap} label="Colleges" isActive={isActive('/colleges')} />
             <NavLink to="/trends" icon={TrendingUp} label="Trends" isActive={isActive('/trends')} />
             <NavLink to="/compare" icon={GitCompare} label="Compare" isActive={isActive('/compare')} />
