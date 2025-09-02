@@ -151,7 +151,8 @@ const CollegeDashboard = () => {
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    const processedValue = key === "branch" && value === "all" ? "" : value;
+    setFilters(prev => ({ ...prev, [key]: processedValue }));
   };
 
   const clearFilters = () => {
@@ -282,7 +283,7 @@ const CollegeDashboard = () => {
                     <SelectValue placeholder="All branches" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Branches</SelectItem>
+                    <SelectItem value="all">All Branches</SelectItem>
                     {branches.map(branch => (
                       <SelectItem key={branch} value={branch}>{branch}</SelectItem>
                     ))}
