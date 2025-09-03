@@ -240,13 +240,26 @@ const OverviewDashboard = () => {
                   <YAxis stroke="#9ca3af" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: 'none',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-elegant)',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                    wrapperStyle={{ outline: 'none' }}
+                    formatter={(value, name) => [
+                      `${value}%`, 
+                      `${typeof name === 'string' ? name.replace(/([A-Z])/g, ' $1').trim() : name}`
+                    ]}
                   />
-                  <Bar dataKey="avgPlacementRate" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="avgPlacementRate" 
+                    fill="hsl(var(--primary))" 
+                    radius={[6, 6, 0, 0]}
+                    onMouseEnter={(data, index) => {}}
+                    className="hover:opacity-80 transition-opacity duration-200"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -276,20 +289,31 @@ const OverviewDashboard = () => {
                       return `${branchName}: ${value}%`;
                     }}
                     outerRadius={100}
+                    innerRadius={40}
                     fill="#8884d8"
                     dataKey="placementRate"
+                    animationBegin={0}
+                    animationDuration={800}
                   >
                     {branchData.slice(0, 6).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]}
+                        className="hover:opacity-80 transition-opacity duration-200 cursor-pointer"
+                        stroke="hsl(var(--card))"
+                        strokeWidth={2}
+                      />
                     ))}
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: 'none',
-                      borderRadius: '8px',
-                      boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-elegant)',
+                      color: 'hsl(var(--foreground))'
                     }}
+                    formatter={(value, name) => [`${value}%`, 'Placement Rate']}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -311,33 +335,47 @@ const OverviewDashboard = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="year" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: 'var(--shadow-elegant)',
+                    color: 'hsl(var(--foreground))'
                   }}
+                  cursor={{ stroke: 'hsl(var(--primary) / 0.2)', strokeWidth: 2 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="placementRate" 
-                  stroke="#6366f1" 
+                  stroke="hsl(var(--primary))" 
                   strokeWidth={3}
-                  dot={{ fill: '#6366f1', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: '#6366f1', strokeWidth: 2 }}
+                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 6 }}
+                  activeDot={{ 
+                    r: 10, 
+                    stroke: 'hsl(var(--primary))', 
+                    strokeWidth: 3,
+                    fill: 'hsl(var(--background))',
+                    filter: 'drop-shadow(0 0 8px hsl(var(--primary) / 0.5))'
+                  }}
                   name="Placement Rate (%)"
                 />
                 <Line 
                   type="monotone" 
                   dataKey="avgPackage" 
-                  stroke="#8b5cf6" 
+                  stroke="hsl(var(--accent))" 
                   strokeWidth={3}
-                  dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: '#8b5cf6', strokeWidth: 2 }}
+                  dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 6 }}
+                  activeDot={{ 
+                    r: 10, 
+                    stroke: 'hsl(var(--accent))', 
+                    strokeWidth: 3,
+                    fill: 'hsl(var(--background))',
+                    filter: 'drop-shadow(0 0 8px hsl(var(--accent) / 0.5))'
+                  }}
                   name="Avg Package (LPA)"
                 />
               </LineChart>
@@ -359,18 +397,25 @@ const OverviewDashboard = () => {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={sectorData} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis type="number" stroke="#9ca3af" />
-                <YAxis dataKey="sector" type="category" stroke="#9ca3af" width={100} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                <YAxis dataKey="sector" type="category" stroke="hsl(var(--muted-foreground))" width={100} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: 'none',
-                    borderRadius: '8px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '12px',
+                    boxShadow: 'var(--shadow-elegant)',
+                    color: 'hsl(var(--foreground))'
                   }}
+                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                 />
-                <Bar dataKey="placements" fill="#10b981" radius={[0, 4, 4, 0]} />
+                <Bar 
+                  dataKey="placements" 
+                  fill="hsl(var(--chart-2))" 
+                  radius={[0, 6, 6, 0]}
+                  className="hover:opacity-80 transition-opacity duration-200"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -392,7 +437,7 @@ const OverviewDashboard = () => {
               {topRecruiters.slice(0, 12).map((recruiter, index) => (
                 <div 
                   key={recruiter.company}
-                  className="p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
+                  className="p-4 rounded-lg bg-gradient-card border border-white/10 hover:border-primary/30 hover:shadow-elegant transition-all duration-300 group cursor-pointer"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-foreground">{recruiter.company}</h4>
