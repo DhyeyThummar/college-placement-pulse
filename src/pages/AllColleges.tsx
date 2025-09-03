@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,10 +16,20 @@ import {
 
 const AllColleges = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedYear, setSelectedYear] = useState("2024");
   const [sortBy, setSortBy] = useState("placementRate");
   const [collegeType, setCollegeType] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Get search parameter from URL on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get('search');
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+  }, [location.search]);
 
   const collegeData = useMemo(() => {
     let data = getCollegeWiseData(parseInt(selectedYear));
@@ -32,12 +42,22 @@ const AllColleges = () => {
       });
     }
 
-    // Filter by search term
+    // Enhanced search functionality
     if (searchTerm) {
-      data = data.filter(d => 
-        d.collegeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        colleges.find(c => c.id === d.collegeId)?.location?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchLower = searchTerm.toLowerCase();
+      data = data.filter(d => {
+        const college = colleges.find(c => c.id === d.collegeId);
+        return (
+          // Search by college name
+          d.collegeName.toLowerCase().includes(searchLower) ||
+          // Search by location
+          college?.location?.toLowerCase().includes(searchLower) ||
+          // Search by college type
+          college?.type?.toLowerCase().includes(searchLower) ||
+          // Search by placement officer (if available)
+          college?.placementOfficer?.toLowerCase().includes(searchLower)
+        );
+      });
     }
     
     // Sort data
