@@ -33,7 +33,6 @@ const Navbar = () => {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/overview', icon: BarChart3, label: 'Overview' },
     { to: '/colleges', icon: GraduationCap, label: 'Colleges' },
-    { to: '/trends', icon: TrendingUp, label: 'Trends' },
     { to: '/compare', icon: GitCompare, label: 'Compare' }
   ];
 

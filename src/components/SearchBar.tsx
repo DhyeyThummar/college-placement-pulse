@@ -23,6 +23,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     e.preventDefault();
     if (query.trim()) {
       setIsLoading(true);
+      onSearch(query.trim());
       // Add slight delay for better UX
       setTimeout(() => {
         navigate(`/colleges?search=${encodeURIComponent(query.trim())}`);

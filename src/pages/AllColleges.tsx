@@ -42,7 +42,7 @@ const AllColleges = () => {
       });
     }
 
-    // Enhanced search functionality
+    // Enhanced search functionality with companies and branches
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       data = data.filter(d => {

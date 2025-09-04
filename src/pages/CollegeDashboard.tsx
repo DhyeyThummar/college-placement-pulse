@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -190,8 +191,35 @@ const CollegeDashboard = () => {
     a.click();
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div 
+      className="min-h-screen bg-background"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       <div className="container mx-auto px-4 py-8">
         {/* College Header */}
         <div className="mb-8">
@@ -339,69 +367,84 @@ const CollegeDashboard = () => {
 
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="card-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                <Users className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalStudents.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.placedStudents.toLocaleString()} placed ({stats.placementRate}%)
-                </p>
-              </CardContent>
-            </Card>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            variants={containerVariants}
+          >
+            <motion.div variants={itemVariants}>
+              <Card className="card-hover glass-effect">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Students</CardTitle>
+                  <Users className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalStudents.toLocaleString()}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.placedStudents.toLocaleString()} placed ({stats.placementRate}%)
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card className="card-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Package</CardTitle>
-                <DollarSign className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">₹{stats.avgPackage} LPA</div>
-                <p className="text-xs text-muted-foreground">
-                  Highest: ₹{stats.highestPackage} LPA
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div variants={itemVariants}>
+              <Card className="card-hover glass-effect">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Average Package</CardTitle>
+                  <DollarSign className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">₹{stats.avgPackage} LPA</div>
+                  <p className="text-xs text-muted-foreground">
+                    Highest: ₹{stats.highestPackage} LPA
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card className="card-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Companies</CardTitle>
-                <Building2 className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalCompanies}</div>
-                <p className="text-xs text-muted-foreground">
-                  Recruiters participated
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div variants={itemVariants}>
+              <Card className="card-hover glass-effect">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Companies</CardTitle>
+                  <Building2 className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Recruiters participated
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card className="card-hover">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Internships</CardTitle>
-                <Briefcase className="h-4 w-4 text-primary" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.internships}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.higherStudies} opted for higher studies
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+            <motion.div variants={itemVariants}>
+              <Card className="card-hover glass-effect">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Internships</CardTitle>
+                  <Briefcase className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.internships}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.higherStudies} opted for higher studies
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
         )}
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Enhanced Charts Grid */}
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8"
+          variants={containerVariants}
+        >
           {/* Branch-wise Placement Rate */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Branch-wise Placement Rate</CardTitle>
-              <CardDescription>Placement percentage by engineering branch</CardDescription>
-            </CardHeader>
+          <motion.div variants={itemVariants}>
+            <Card className="glass-effect">
+              <CardHeader>
+                <CardTitle>Branch-wise Placement Rate</CardTitle>
+                <CardDescription>Placement percentage by engineering branch</CardDescription>
+              </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={branchWiseData}>
@@ -417,21 +460,32 @@ const CollegeDashboard = () => {
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))'
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                     }}
+                    formatter={(value, name) => [`${value}%`, 'Placement Rate']}
+                    labelFormatter={(label) => `Branch: ${label}`}
                   />
-                  <Bar dataKey="placementRate" fill="hsl(var(--primary))" />
+                  <Bar 
+                    dataKey="placementRate" 
+                    fill="hsl(var(--primary))" 
+                    radius={[4, 4, 0, 0]}
+                    className="hover:opacity-80 transition-opacity cursor-pointer"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </motion.div>
 
           {/* Package Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Package Distribution</CardTitle>
-              <CardDescription>Number of students by salary range</CardDescription>
-            </CardHeader>
+          <motion.div variants={itemVariants}>
+            <Card className="glass-effect">
+              <CardHeader>
+                <CardTitle>Package Distribution</CardTitle>
+                <CardDescription>Number of students by salary range</CardDescription>
+              </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -449,18 +503,28 @@ const CollegeDashboard = () => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                    formatter={(value, name) => [`${value} students`, 'Count']}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </motion.div>
 
           {/* Placement Trends */}
-          <Card>
-            <CardHeader>
-              <CardTitle>5-Year Placement Trend</CardTitle>
-              <CardDescription>Placement rate and average package over years</CardDescription>
-            </CardHeader>
+          <motion.div variants={itemVariants}>
+            <Card className="glass-effect">
+              <CardHeader>
+                <CardTitle>5-Year Placement Trend</CardTitle>
+                <CardDescription>Placement rate and average package over years</CardDescription>
+              </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={trendData}>
@@ -494,66 +558,71 @@ const CollegeDashboard = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </motion.div>
 
           {/* Sector-wise Placements */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sector-wise Placements</CardTitle>
-              <CardDescription>Placements across different industry sectors</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={sectorWiseData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="sector" width={100} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))'
-                    }}
-                  />
-                  <Bar dataKey="placements" fill="hsl(var(--accent))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+          <motion.div variants={itemVariants}>
+            <Card className="glass-effect">
+              <CardHeader>
+                <CardTitle>Sector-wise Placements</CardTitle>
+                <CardDescription>Placements across different industry sectors</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={sectorWiseData} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis type="number" />
+                    <YAxis type="category" dataKey="sector" width={100} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))'
+                      }}
+                    />
+                    <Bar dataKey="placements" fill="hsl(var(--accent))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
         {/* Top Recruiters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Top Recruiters ({filters.year})
-            </CardTitle>
-            <CardDescription>Companies with highest number of placements</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topRecruiters.map((recruiter, index) => (
-                <Card key={recruiter.company} className="card-hover">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold">{recruiter.company}</h3>
-                      <Badge variant={recruiter.tier === "Tier 1" ? "default" : "secondary"}>
-                        {recruiter.tier}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <p>Placements: <span className="font-medium text-foreground">{recruiter.totalPlacements}</span></p>
-                      <p>Avg Package: <span className="font-medium text-foreground">₹{recruiter.avgPackage} LPA</span></p>
-                      <p>Highest: <span className="font-medium text-foreground">₹{recruiter.highestPackage} LPA</span></p>
-                      <p>Sector: <span className="font-medium text-foreground">{recruiter.sector}</span></p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div variants={itemVariants}>
+          <Card className="glass-effect">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Top Recruiters ({filters.year})
+              </CardTitle>
+              <CardDescription>Companies with highest number of placements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {topRecruiters.map((recruiter, index) => (
+                  <Card key={recruiter.company} className="card-hover">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold">{recruiter.company}</h3>
+                        <Badge variant={recruiter.tier === "Tier 1" ? "default" : "secondary"}>
+                          {recruiter.tier}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        <p>Placements: <span className="font-medium text-foreground">{recruiter.totalPlacements}</span></p>
+                        <p>Avg Package: <span className="font-medium text-foreground">₹{recruiter.avgPackage} LPA</span></p>
+                        <p>Highest: <span className="font-medium text-foreground">₹{recruiter.highestPackage} LPA</span></p>
+                        <p>Sector: <span className="font-medium text-foreground">{recruiter.sector}</span></p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
