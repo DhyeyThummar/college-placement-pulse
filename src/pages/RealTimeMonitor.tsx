@@ -67,18 +67,33 @@ const RealTimeMonitor = () => {
         activeOffers: prev.activeOffers + Math.floor(Math.random() * 5),
         studentsPlaced: prev.studentsPlaced + Math.floor(Math.random() * 3),
         companiesActive: prev.companiesActive + (Math.random() > 0.8 ? 1 : 0),
-        averagePackage: prev.averagePackage + (Math.random() - 0.5) * 0.1,
-        placementRate: Math.min(100, prev.placementRate + (Math.random() - 0.5) * 0.5)
+        averagePackage: Math.max(0, prev.averagePackage + (Math.random() - 0.5) * 0.1),
+        placementRate: Math.min(100, Math.max(0, prev.placementRate + (Math.random() - 0.5) * 0.5))
       }));
 
-      // Update time series
+      // Update time series with proper validation
       const newTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setTimeSeriesData(prev => {
+        // Ensure prev is not empty and has valid data
+        if (!prev || prev.length === 0) {
+          return [{
+            time: newTime,
+            offers: 120,
+            placements: 85,
+            companies: 25
+          }];
+        }
+        
+        const lastData = prev[prev.length - 1];
+        if (!lastData) {
+          return prev;
+        }
+        
         const newData = [...prev.slice(-5), {
           time: newTime,
-          offers: prev[prev.length - 1].offers + Math.floor(Math.random() * 20) + 10,
-          placements: prev[prev.length - 1].placements + Math.floor(Math.random() * 15) + 8,
-          companies: prev[prev.length - 1].companies + (Math.random() > 0.7 ? 1 : 0)
+          offers: Math.max(0, (lastData.offers || 0) + Math.floor(Math.random() * 20) + 10),
+          placements: Math.max(0, (lastData.placements || 0) + Math.floor(Math.random() * 15) + 8),
+          companies: Math.max(0, (lastData.companies || 0) + (Math.random() > 0.7 ? 1 : 0))
         }];
         return newData;
       });
@@ -263,46 +278,50 @@ const RealTimeMonitor = () => {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={timeSeriesData}>
-                    <defs>
-                      <linearGradient id="offersGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="placementsGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip 
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--primary) / 0.2)',
-                        borderRadius: '12px',
-                        boxShadow: 'var(--shadow-elegant)',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="offers"
-                      stackId="1"
-                      stroke="hsl(var(--primary))"
-                      fill="url(#offersGrad)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="placements"
-                      stackId="2"
-                      stroke="hsl(var(--accent))"
-                      fill="url(#placementsGrad)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
+                  {timeSeriesData && timeSeriesData.length > 0 ? (
+                    <AreaChart data={timeSeriesData}>
+                      <defs>
+                        <linearGradient id="offersGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                        </linearGradient>
+                        <linearGradient id="placementsGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="time" />
+                      <YAxis />
+                      <Tooltip 
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--primary) / 0.2)',
+                          borderRadius: '12px',
+                          boxShadow: 'var(--shadow-elegant)',
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="offers"
+                        stroke="hsl(var(--primary))"
+                        fill="url(#offersGrad)"
+                        strokeWidth={2}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="placements"
+                        stroke="hsl(var(--accent))"
+                        fill="url(#placementsGrad)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-muted-foreground">Loading chart data...</p>
+                    </div>
+                  )}
                 </ResponsiveContainer>
               </CardContent>
             </Card>
