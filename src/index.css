@@ -47,8 +47,12 @@
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(239 84% 67%), hsl(262 83% 58%));
     --gradient-hero: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(262 83% 58%) 50%, hsl(284 100% 70%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(224 71% 4%) 0%, hsl(215 28% 17%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(224 71% 4% / 0.8) 0%, hsl(215 28% 17% / 0.9) 100%);
     --gradient-glass: linear-gradient(135deg, hsl(224 71% 4% / 0.4) 0%, hsl(215 28% 17% / 0.2) 100%);
+    --gradient-mesh: 
+      radial-gradient(circle at 25% 25%, hsl(239 84% 67% / 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, hsl(262 83% 58% / 0.1) 0%, transparent 50%),
+      linear-gradient(135deg, transparent, hsl(284 100% 70% / 0.05));
 
     /* Shadows */
     --shadow-glass: 0 8px 32px 0 hsl(239 84% 67% / 0.1), inset 0 1px 0 hsl(255 100% 100% / 0.1);
@@ -71,8 +75,13 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    background: linear-gradient(135deg, hsl(222 84% 4.9%) 0%, hsl(215 28% 17%) 100%);
+    background: 
+      radial-gradient(circle at 20% 80%, hsl(239 84% 67% / 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(262 83% 58% / 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, hsl(284 100% 70% / 0.1) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(222 84% 4.9%) 0%, hsl(215 28% 17%) 100%);
     min-height: 100vh;
+    background-attachment: fixed;
   }
 
   /* Glassmorphism utilities */
@@ -128,9 +137,31 @@
 @layer components {
   /* Hero section animations */
   .hero-bg {
-    background: radial-gradient(circle at 20% 80%, hsl(239 84% 67% / 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, hsl(262 83% 58% / 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, hsl(284 100% 70% / 0.1) 0%, transparent 50%);
+    background: 
+      radial-gradient(circle at 20% 80%, hsl(239 84% 67% / 0.2) 0%, transparent 60%),
+      radial-gradient(circle at 80% 20%, hsl(262 83% 58% / 0.2) 0%, transparent 60%),
+      radial-gradient(circle at 40% 40%, hsl(284 100% 70% / 0.15) 0%, transparent 60%),
+      var(--gradient-mesh);
+  }
+  
+  /* Chart hover effects */
+  .chart-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .chart-hover:hover {
+    filter: brightness(1.1) saturate(1.2);
+    transform: scale(1.02);
+  }
+  
+  /* Enhanced glass effect */
+  .glass-enhanced {
+    background: var(--gradient-glass);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsl(var(--primary) / 0.2);
+    box-shadow: 
+      0 8px 32px 0 hsl(var(--primary) / 0.1),
+      inset 0 1px 0 hsl(255 100% 100% / 0.1);
   }
 }
 

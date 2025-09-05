@@ -12,7 +12,11 @@ import {
   Settings,
   GraduationCap,
   Menu,
-  X
+  X,
+  Brain,
+  Activity,
+  Building2,
+  Target
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -33,6 +37,10 @@ const Navbar = () => {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/overview', icon: BarChart3, label: 'Overview' },
     { to: '/colleges', icon: GraduationCap, label: 'Colleges' },
+    { to: '/analytics', icon: Brain, label: 'Analytics' },
+    { to: '/live-monitor', icon: Activity, label: 'Live Monitor' },
+    { to: '/companies', icon: Building2, label: 'Companies' },
+    { to: '/predictor', icon: Target, label: 'Predictor' },
     { to: '/compare', icon: GitCompare, label: 'Compare' }
   ];
 

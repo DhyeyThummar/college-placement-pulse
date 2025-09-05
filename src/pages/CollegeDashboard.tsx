@@ -460,18 +460,21 @@ const CollegeDashboard = () => {
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      border: '1px solid hsl(var(--primary) / 0.2)',
+                      borderRadius: '12px',
+                      boxShadow: 'var(--shadow-elegant)',
+                      backdropFilter: 'blur(10px)'
                     }}
                     formatter={(value, name) => [`${value}%`, 'Placement Rate']}
                     labelFormatter={(label) => `Branch: ${label}`}
+                    cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
+                    wrapperStyle={{ outline: 'none' }}
                   />
                   <Bar 
                     dataKey="placementRate" 
                     fill="hsl(var(--primary))" 
-                    radius={[4, 4, 0, 0]}
-                    className="hover:opacity-80 transition-opacity cursor-pointer"
+                    radius={[6, 6, 0, 0]}
+                    className="hover:opacity-80 hover:scale-105 transition-all duration-300 cursor-pointer"
                   />
                 </BarChart>
               </ResponsiveContainer>

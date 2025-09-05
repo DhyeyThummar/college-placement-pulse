@@ -50,6 +50,20 @@ const Home = () => {
       gradient: 'from-green-500 to-teal-600'
     },
     {
+      icon: BarChart3,
+      title: 'Advanced Analytics',
+      description: 'Deep insights and predictive analytics.',
+      action: () => navigate('/analytics'),
+      gradient: 'from-blue-500 to-purple-600'
+    },
+    {
+      icon: TrendingUp,
+      title: 'Live Monitor',
+      description: 'Real-time placement tracking and updates.',
+      action: () => navigate('/live-monitor'),
+      gradient: 'from-red-500 to-pink-600'
+    },
+    {
       icon: Settings,
       title: 'Admin Panel',
       description: 'Manage placement data and system settings.',
