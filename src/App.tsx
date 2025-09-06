@@ -17,9 +17,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import CollegeDashboard from "./pages/CollegeDashboard";
 import AllColleges from "./pages/AllColleges";
 import NotFound from "./pages/NotFound";
-import PlacementPredictor from './pages/PlacementPredictor';
-import CompanyInsights from './pages/CompanyInsights';
-import Analytics from './pages/Analytics';
 import RealTimeMonitor from './pages/RealTimeMonitor';
 
 const queryClient = new QueryClient();
@@ -40,9 +37,6 @@ const App = () => (
               <Route path="/compare" element={<Compare />} />
               <Route path="/colleges" element={<AllColleges />} />
               <Route path="/college/:collegeId" element={<CollegeDashboard />} />
-              <Route path="/predictor" element={<PlacementPredictor />} />
-              <Route path="/companies" element={<CompanyInsights />} />
-              <Route path="/analytics" element={<Analytics />} />
               <Route path="/live-monitor" element={<RealTimeMonitor />} />
               <Route 
                 path="/admin" 

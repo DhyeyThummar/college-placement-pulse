@@ -36,12 +36,9 @@ const Navbar = () => {
   const navigationItems = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/overview', icon: BarChart3, label: 'Overview' },
-    { to: '/colleges', icon: GraduationCap, label: 'Colleges' },
-    { to: '/analytics', icon: Brain, label: 'Analytics' },
+    { to: '/colleges', icon: Building2, label: 'All Colleges' },
+    { to: '/compare', icon: GitCompare, label: 'Compare' },
     { to: '/live-monitor', icon: Activity, label: 'Live Monitor' },
-    { to: '/companies', icon: Building2, label: 'Companies' },
-    { to: '/predictor', icon: Target, label: 'Predictor' },
-    { to: '/compare', icon: GitCompare, label: 'Compare' }
   ];
 
   return (
