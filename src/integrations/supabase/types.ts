@@ -52,7 +52,7 @@ export type Database = {
           id: string
           schema_info: Json
           upload_date: string
-          uploaded_by: string
+          uploaded_by: string | null
         }
         Insert: {
           college_id: string
@@ -61,7 +61,7 @@ export type Database = {
           id?: string
           schema_info: Json
           upload_date?: string
-          uploaded_by: string
+          uploaded_by?: string | null
         }
         Update: {
           college_id?: string
@@ -70,7 +70,7 @@ export type Database = {
           id?: string
           schema_info?: Json
           upload_date?: string
-          uploaded_by?: string
+          uploaded_by?: string | null
         }
         Relationships: [
           {

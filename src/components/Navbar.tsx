@@ -6,17 +6,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { 
   BarChart3, 
   Home, 
-  TrendingUp, 
   GitCompare, 
   LogOut, 
-  Settings,
   GraduationCap,
   Menu,
-  X,
-  Brain,
   Activity,
-  Building2,
-  Target
+  Building2
 } from 'lucide-react';
 
 const Navbar = () => {

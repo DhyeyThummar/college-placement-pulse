@@ -1,181 +1,157 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { motion } from "framer-motion";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, ScatterChart, Scatter
 } from "recharts";
 import { 
   TrendingUp, Users, GraduationCap, Building2, Award, Download, 
-  Briefcase, DollarSign, Target, BarChart3, Calendar, MapPin
+  Briefcase, DollarSign, Target, BarChart3, Calendar, MapPin, Loader2
 } from "lucide-react";
 import { 
-  colleges, getCollegeWiseData, getTrendData, getTopRecruiters, getPlacementStats,
-  getBranchWiseData, getSectorWiseData
-} from "@/data/enhancedPlacementData";
-import { saveAs } from 'file-saver';
-import * as Papa from 'papaparse';
+  getPlacementStats, getBranchWiseData, getCollegeWiseData 
+} from "@/services/database";
 
 const OverviewDashboard = () => {
   const [selectedYear, setSelectedYear] = useState("2024");
   const [collegeType, setCollegeType] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalOffers: 0,
+    placementRate: 0,
+    avgPackage: 0,
+    totalCompanies: 0
+  });
+  const [branchData, setBranchData] = useState<any[]>([]);
+  const [collegeData, setCollegeData] = useState<any[]>([]);
 
-  const overallStats = useMemo(() => getPlacementStats(), []);
-  const trendData = useMemo(() => getTrendData(), []);
-  const topRecruiters = useMemo(() => getTopRecruiters(null, parseInt(selectedYear), 15), [selectedYear]);
-  const branchData = useMemo(() => getBranchWiseData(null, parseInt(selectedYear)), [selectedYear]);
-  const sectorData = useMemo(() => getSectorWiseData(null, parseInt(selectedYear)), [selectedYear]);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [placementStats, branchStats, colleges] = await Promise.all([
+          getPlacementStats(),
+          getBranchWiseData(),
+          getCollegeWiseData()
+        ]);
 
-  const collegeData = useMemo(() => {
-    let data = getCollegeWiseData(parseInt(selectedYear));
+        setStats(placementStats);
+        setBranchData(branchStats);
+        setCollegeData(colleges);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filteredCollegeData = useMemo(() => {
+    let data = [...collegeData];
     
     if (collegeType !== "all") {
-      data = data.filter(d => {
-        const college = colleges.find(c => c.id === d.collegeId);
-        return college?.type === collegeType;
-      });
+      data = data.filter(college => 
+        college.type.toLowerCase() === collegeType.toLowerCase()
+      );
     }
     
     return data.sort((a, b) => b.placementRate - a.placementRate);
-  }, [selectedYear, collegeType]);
+  }, [collegeData, collegeType]);
 
   const typeWiseData = useMemo(() => {
-    const typeStats: Record<string, {
-      type: string;
-      colleges: number;
-      totalStudents: number;
-      placedStudents: number;
-      avgPlacementRate: number;
-      avgPackage: number;
-    }> = {};
+    const typeStats: Record<string, any> = {};
     
     collegeData.forEach(college => {
-      const collegeInfo = colleges.find(c => c.id === college.collegeId);
-      const type = collegeInfo?.type || "Unknown";
-      
-      if (!typeStats[type]) {
-        typeStats[type] = {
-          type,
+      if (!typeStats[college.type]) {
+        typeStats[college.type] = {
+          type: college.type,
           colleges: 0,
           totalStudents: 0,
           placedStudents: 0,
-          avgPlacementRate: 0,
-          avgPackage: 0
+          avgPackage: 0,
+          packageSum: 0
         };
       }
       
-      typeStats[type].colleges += 1;
-      typeStats[type].totalStudents += college.totalStudents;
-      typeStats[type].placedStudents += college.placedStudents;
-      typeStats[type].avgPackage += college.avgPackage;
+      typeStats[college.type].colleges += 1;
+      typeStats[college.type].totalStudents += college.totalStudents;
+      typeStats[college.type].placedStudents += college.placedStudents;
+      typeStats[college.type].packageSum += college.avgPackage * college.placedStudents;
     });
     
-    return Object.values(typeStats).map(stat => ({
+    return Object.values(typeStats).map((stat: any) => ({
       ...stat,
-      avgPlacementRate: Math.round((stat.placedStudents / stat.totalStudents) * 100),
-      avgPackage: Math.round(stat.avgPackage / stat.colleges)
+      placementRate: stat.totalStudents > 0 ? (stat.placedStudents / stat.totalStudents) * 100 : 0,
+      avgPackage: stat.placedStudents > 0 ? stat.packageSum / stat.placedStudents : 0
     }));
   }, [collegeData]);
 
-  const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4', '#ef4444'];
+  const chartColors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444'];
 
-  const exportData = () => {
-    const csvData = collegeData.map(college => {
-      const collegeInfo = colleges.find(c => c.id === college.collegeId);
-      return {
-        College: college.collegeName,
-        Type: collegeInfo?.type || "Unknown",
-        Location: collegeInfo?.location || "Unknown",
-        'Total Students': college.totalStudents,
-        'Placed Students': college.placedStudents,
-        'Placement Rate (%)': college.placementRate,
-        'Average Package (LPA)': college.avgPackage,
-        'Highest Package (LPA)': college.highestPackage,
-        'Top Recruiter': college.topRecruiter || 'N/A'
-      };
-    });
-
-    const csv = Papa.unparse(csvData);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `overall-placement-data-${selectedYear}.csv`);
-  };
-
-  const statCards = [
-    {
-      title: 'Total Students',
-      value: overallStats.totalStudents.toLocaleString(),
-      subtitle: 'Across all colleges',
-      icon: Users,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10'
-    },
-    {
-      title: 'Overall Placement Rate',
-      value: `${overallStats.placementRate}%`,
-      subtitle: 'Successfully placed',
-      icon: Target,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10'
-    },
-    {
-      title: 'Average Package',
-      value: `${overallStats.avgPackage} LPA`,
-      subtitle: 'Across all placements',
-      icon: DollarSign,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10'
-    },
-    {
-      title: 'Participating Companies',
-      value: overallStats.totalCompanies.toString(),
-      subtitle: 'Active recruiters',
-      icon: Building2,
-      color: 'text-orange-400',
-      bgColor: 'bg-orange-500/10'
-    }
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-24 pb-12 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen pt-20">
-      <div className="container mx-auto px-6 py-8">
+    <div className="min-h-screen pt-24 pb-12">
+      <div className="container mx-auto px-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold gradient-text mb-2">
-            Overall Placement Analytics
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
+            Overview Dashboard
           </h1>
-          <p className="text-muted-foreground">
-            Comprehensive placement insights across all participating colleges
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            Comprehensive placement insights across all colleges with interactive visualizations and trends.
           </p>
-        </div>
+        </motion.div>
 
         {/* Filters */}
-        <Card className="mb-8 glass-effect border-white/10">
-          <CardContent className="p-6">
-            <div className="flex flex-wrap gap-4 items-end">
+        <Card className="glass-effect border-white/10 mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Dashboard Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="year">Academic Year</Label>
+                <Label>Academic Year</Label>
                 <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Select year" />
+                  <SelectTrigger className="glass-effect border-white/20 focus:border-primary/50">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="2024">2023-24</SelectItem>
                     <SelectItem value="2023">2022-23</SelectItem>
                     <SelectItem value="2022">2021-22</SelectItem>
-                    <SelectItem value="2021">2020-21</SelectItem>
-                    <SelectItem value="2020">2019-20</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type">College Type</Label>
+                <Label>College Type</Label>
                 <Select value={collegeType} onValueChange={setCollegeType}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All types" />
+                  <SelectTrigger className="glass-effect border-white/20 focus:border-primary/50">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
@@ -184,289 +160,252 @@ const OverviewDashboard = () => {
                   </SelectContent>
                 </Select>
               </div>
-
-              <Button onClick={exportData} variant="outline" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Export Data
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Overall Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat, index) => (
-            <Card key={index} className="glass-effect border-white/10 card-hover">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      {stat.title}
-                    </p>
-                    <p className="text-2xl font-bold text-foreground mb-1">
-                      {stat.value}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.subtitle}
-                    </p>
-                  </div>
-                  <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                  </div>
+        {/* Key Statistics */}
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+        >
+          <Card className="glass-effect border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-transparent">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Offers</p>
+                  <p className="text-3xl font-bold text-blue-400">{stats.totalOffers.toLocaleString()}</p>
+                </div>
+                <Users className="h-8 w-8 text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-green-500/20 bg-gradient-to-br from-green-500/10 to-transparent">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Placement Rate</p>
+                  <p className="text-3xl font-bold text-green-400">{stats.placementRate.toFixed(1)}%</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 to-transparent">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Avg Package</p>
+                  <p className="text-3xl font-bold text-yellow-400">₹{(stats.avgPackage / 100000).toFixed(1)}L</p>
+                </div>
+                <Award className="h-8 w-8 text-yellow-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-effect border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-transparent">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Companies</p>
+                  <p className="text-3xl font-bold text-purple-400">{stats.totalCompanies}</p>
+                </div>
+                <Building2 className="h-8 w-8 text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          {/* Branch-wise Placement Chart */}
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="glass-effect border-white/10 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Branch-wise Placement
+                </CardTitle>
+                <CardDescription>
+                  Placement statistics across different engineering branches
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={branchData.slice(0, 6)}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis 
+                      dataKey="branch" 
+                      stroke="#888"
+                      fontSize={12}
+                      tickFormatter={(value) => value.split(' ')[0]}
+                    />
+                    <YAxis stroke="#888" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '8px',
+                        color: 'white'
+                      }}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'placementRate') {
+                          return [`${value.toFixed(1)}%`, 'Placement Rate'];
+                        }
+                        return [value, name];
+                      }}
+                    />
+                    <Bar 
+                      dataKey="placementRate" 
+                      fill="url(#branchGradient)" 
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <defs>
+                      <linearGradient id="branchGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8B5CF6" />
+                        <stop offset="100%" stopColor="#06B6D4" />
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* College Type Distribution */}
+          <motion.div
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="glass-effect border-white/10 h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  College Type Analysis
+                </CardTitle>
+                <CardDescription>
+                  Placement distribution by college type
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={typeWiseData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={120}
+                      paddingAngle={5}
+                      dataKey="placedStudents"
+                    >
+                      {typeWiseData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={chartColors[index % chartColors.length]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '8px',
+                        color: 'white'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-4 mt-4">
+                  {typeWiseData.map((entry, index) => (
+                    <div key={entry.type} className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: chartColors[index % chartColors.length] }}
+                      />
+                      <span className="text-sm text-muted-foreground">{entry.type}</span>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          ))}
+          </motion.div>
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* College Type Analysis */}
+        {/* Top Performing Colleges */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
           <Card className="glass-effect border-white/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-primary" />
-                College Type Analysis
+                <Trophy className="h-5 w-5 text-primary" />
+                Top Performing Colleges
               </CardTitle>
               <CardDescription>
-                Performance comparison by college type
+                Colleges with highest placement rates {collegeType !== 'all' && `(${collegeType} only)`}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={typeWiseData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="type" stroke="#9ca3af" />
-                  <YAxis stroke="#9ca3af" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: 'var(--shadow-elegant)',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
-                    wrapperStyle={{ outline: 'none' }}
-                    formatter={(value, name) => [
-                      `${value}%`, 
-                      `${typeof name === 'string' ? name.replace(/([A-Z])/g, ' $1').trim() : name}`
-                    ]}
-                  />
-                  <Bar 
-                    dataKey="avgPlacementRate" 
-                    fill="hsl(var(--primary))" 
-                    radius={[6, 6, 0, 0]}
-                    onMouseEnter={(data, index) => {}}
-                    className="hover:opacity-80 transition-opacity duration-200"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCollegeData.slice(0, 6).map((college, index) => (
+                  <Card key={college.id} className="glass-effect border-white/5">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm line-clamp-2">{college.name}</h4>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <MapPin className="h-3 w-3" />
+                            {college.location}
+                          </p>
+                        </div>
+                        <Badge className="ml-2 text-xs">
+                          #{index + 1}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Placement Rate:</span>
+                          <span className="font-medium text-green-400">
+                            {college.placementRate.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Avg Package:</span>
+                          <span className="font-medium">
+                            ₹{(college.avgPackage / 100000).toFixed(1)}L
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Students:</span>
+                          <span className="font-medium">{college.totalStudents}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </CardContent>
           </Card>
-
-          {/* Branch-wise Distribution */}
-          <Card className="glass-effect border-white/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5 text-primary" />
-                Branch-wise Placements
-              </CardTitle>
-              <CardDescription>
-                Placement distribution across branches
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={branchData.slice(0, 6)}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ branch, value }) => {
-                      const branchName = branch && typeof branch === 'string' ? branch.split(' ')[0] : branch || 'Unknown';
-                      return `${branchName}: ${value}%`;
-                    }}
-                    outerRadius={100}
-                    innerRadius={40}
-                    fill="#8884d8"
-                    dataKey="placementRate"
-                    animationBegin={0}
-                    animationDuration={800}
-                  >
-                    {branchData.slice(0, 6).map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]}
-                        className="hover:opacity-80 transition-opacity duration-200 cursor-pointer"
-                        stroke="hsl(var(--card))"
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: 'var(--shadow-elegant)',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    formatter={(value, name) => [`${value}%`, 'Placement Rate']}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 5-Year Trends */}
-        <Card className="glass-effect border-white/10 mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              5-Year Placement Trends
-            </CardTitle>
-            <CardDescription>
-              Historical placement data and package trends
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={trendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    boxShadow: 'var(--shadow-elegant)',
-                    color: 'hsl(var(--foreground))'
-                  }}
-                  cursor={{ stroke: 'hsl(var(--primary) / 0.2)', strokeWidth: 2 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="placementRate" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 6 }}
-                  activeDot={{ 
-                    r: 10, 
-                    stroke: 'hsl(var(--primary))', 
-                    strokeWidth: 3,
-                    fill: 'hsl(var(--background))',
-                    filter: 'drop-shadow(0 0 8px hsl(var(--primary) / 0.5))'
-                  }}
-                  name="Placement Rate (%)"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="avgPackage" 
-                  stroke="hsl(var(--accent))" 
-                  strokeWidth={3}
-                  dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 6 }}
-                  activeDot={{ 
-                    r: 10, 
-                    stroke: 'hsl(var(--accent))', 
-                    strokeWidth: 3,
-                    fill: 'hsl(var(--background))',
-                    filter: 'drop-shadow(0 0 8px hsl(var(--accent) / 0.5))'
-                  }}
-                  name="Avg Package (LPA)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Sector-wise Analysis */}
-        <Card className="glass-effect border-white/10 mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-primary" />
-              Sector-wise Placements
-            </CardTitle>
-            <CardDescription>
-              Industry-wise placement distribution
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={sectorData} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="sector" type="category" stroke="hsl(var(--muted-foreground))" width={100} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '12px',
-                    boxShadow: 'var(--shadow-elegant)',
-                    color: 'hsl(var(--foreground))'
-                  }}
-                  cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
-                />
-                <Bar 
-                  dataKey="placements" 
-                  fill="hsl(var(--chart-2))" 
-                  radius={[0, 6, 6, 0]}
-                  className="hover:opacity-80 transition-opacity duration-200"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Top Recruiters */}
-        <Card className="glass-effect border-white/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Top Recruiters - {selectedYear}
-            </CardTitle>
-            <CardDescription>
-              Companies with highest placement numbers
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topRecruiters.slice(0, 12).map((recruiter, index) => (
-                <div 
-                  key={recruiter.company}
-                  className="p-4 rounded-lg bg-gradient-card border border-white/10 hover:border-primary/30 hover:shadow-elegant transition-all duration-300 group cursor-pointer"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-foreground">{recruiter.company}</h4>
-                    <Badge variant="secondary" className="text-xs">
-                      #{index + 1}
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>Placements:</span>
-                      <span className="font-medium text-foreground">{recruiter.totalPlacements}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Avg Package:</span>
-                      <span className="font-medium text-foreground">{recruiter.avgPackage} LPA</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Sector:</span>
-                      <span className="font-medium text-foreground">{recruiter.sector}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        </motion.div>
       </div>
     </div>
   );
 };
+
+// Import Trophy icon
+import { Trophy } from "lucide-react";
 
 export default OverviewDashboard;

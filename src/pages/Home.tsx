@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,12 +15,33 @@ import {
   Building2,
   School
 } from 'lucide-react';
-import { getPlacementStats } from '../data/placementData';
+import { getPlacementStats } from '@/services/database';
 import SearchBar from '../components/SearchBar';
 
 const Home = () => {
   const navigate = useNavigate();
-  const stats = getPlacementStats();
+  const [stats, setStats] = useState({
+    totalOffers: 0,
+    placementRate: 0,
+    avgPackage: 0,
+    totalCompanies: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const placementStats = await getPlacementStats();
+        setStats(placementStats);
+      } catch (error) {
+        console.error('Error fetching placement stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const mainFeatures = [
     {
