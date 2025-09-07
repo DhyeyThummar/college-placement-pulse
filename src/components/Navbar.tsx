@@ -2,28 +2,43 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { toast } from '@/hooks/use-toast';
 import { 
   BarChart3, 
   Home, 
   GitCompare, 
   LogOut, 
+  LogIn,
   GraduationCap,
   Menu,
   Activity,
-  Building2
+  Building2,
+  User,
+  LayoutDashboard
 } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, signOut, isAuthenticated, userRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
-    setIsMobileMenuOpen(false);
+    toast({
+      title: 'Logged out successfully',
+      description: 'See you soon!',
+    });
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -63,32 +78,38 @@ const Navbar = () => {
             ))}
             
             {!isAuthenticated ? (
-              <Button
-                onClick={() => navigate('/login')}
-                variant="outline"
-                className="ml-4 glass-effect border-primary/30 hover:border-primary/50 hover:bg-primary/10"
-              >
-                Login
-              </Button>
+              <Link to="/auth">
+                <Button variant="outline" className="glass-effect border-primary/30 hover:border-primary/50 hover:bg-primary/10">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+              </Link>
             ) : (
-              <div className="flex items-center space-x-2 ml-4">
-                <Button
-                  onClick={() => navigate(user?.role === 'admin' ? '/admin' : '/dashboard')}
-                  variant="outline"
-                  className="glass-effect border-primary/30 hover:border-primary/50 hover:bg-primary/10"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-                <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  size="sm"
-                  className="glass-effect border-destructive/30 hover:border-destructive/50 hover:bg-destructive/10"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="glass-effect border-primary/30 hover:border-primary/50 hover:bg-primary/10">
+                    <User className="h-4 w-4 mr-2" />
+                    Account
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 glass-effect border-white/10">
+                  <DropdownMenuLabel>
+                    {user?.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={userRole === 'admin' ? '/admin' : '/dashboard'} className="flex items-center">
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -120,33 +141,37 @@ const Navbar = () => {
                     {!isAuthenticated ? (
                       <Button
                         onClick={() => {
-                          navigate('/login');
+                          navigate('/auth');
                           setIsMobileMenuOpen(false);
                         }}
                         className="w-full bg-gradient-primary hover:opacity-90"
                       >
-                        Login
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Sign In
                       </Button>
                     ) : (
                       <div className="space-y-3">
                         <Button
                           onClick={() => {
-                            navigate(user?.role === 'admin' ? '/admin' : '/dashboard');
+                            navigate(userRole === 'admin' ? '/admin' : '/dashboard');
                             setIsMobileMenuOpen(false);
                           }}
                           variant="outline"
                           className="w-full glass-effect border-primary/30 hover:border-primary/50 hover:bg-primary/10"
                         >
-                          <BarChart3 className="h-4 w-4 mr-2" />
+                          <LayoutDashboard className="h-4 w-4 mr-2" />
                           Dashboard
                         </Button>
                         <Button
-                          onClick={handleLogout}
+                          onClick={() => {
+                            handleLogout();
+                            setIsMobileMenuOpen(false);
+                          }}
                           variant="outline"
                           className="w-full glass-effect border-destructive/30 hover:border-destructive/50 hover:bg-destructive/10"
                         >
                           <LogOut className="h-4 w-4 mr-2" />
-                          Logout
+                          Sign Out
                         </Button>
                       </div>
                     )}
@@ -161,7 +186,7 @@ const Navbar = () => {
   );
 };
 
-const NavLink = ({ to, icon: Icon, label, isActive }) => (
+const NavLink = ({ to, icon: Icon, label, isActive }: any) => (
   <Link
     to={to}
     className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
@@ -175,7 +200,7 @@ const NavLink = ({ to, icon: Icon, label, isActive }) => (
   </Link>
 );
 
-const MobileNavLink = ({ to, icon: Icon, label, isActive, onClick }) => (
+const MobileNavLink = ({ to, icon: Icon, label, isActive, onClick }: any) => (
   <Link
     to={to}
     onClick={onClick}

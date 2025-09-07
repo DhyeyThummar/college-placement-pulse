@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { getColleges, getCollegeById } from '@/services/database';
 import { 
   Upload, 
   Download, 
@@ -13,16 +17,164 @@ import {
   Users,
   TrendingUp,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Building,
+  Loader2
 } from 'lucide-react';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
-import { placementData } from '../data/placementData';
+
+interface ProcessedData {
+  year: number;
+  branch_data: Array<{
+    branch: string;
+    total_students: number;
+    placed_students: number;
+    highest_package: number;
+    average_package: number;
+    median_package?: number;
+    companies: string[];
+  }>;
+  overall_stats: {
+    total_students: number;
+    total_placed: number;
+    placement_percentage: number;
+    total_companies: number;
+    highest_package: number;
+    average_package: number;
+  };
+}
 
 const AdminDashboard = () => {
   const [uploadedData, setUploadedData] = useState<any[]>([]);
+  const [processedData, setProcessedData] = useState<ProcessedData | null>(null);
+  const [selectedCollege, setSelectedCollege] = useState('');
+  const [colleges, setColleges] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    totalColleges: 0,
+    totalBranches: 0,
+    lastUpdated: new Date().toLocaleDateString()
+  });
+  
+  const { user, userRole, userProfile } = useAuth();
+
+  useEffect(() => {
+    loadColleges();
+    loadStats();
+  }, []);
+
+  const loadColleges = async () => {
+    const collegesData = await getColleges();
+    setColleges(collegesData);
+  };
+
+  const loadStats = async () => {
+    try {
+      const { data: placementData } = await supabase
+        .from('placement_data')
+        .select('*');
+
+      if (placementData) {
+        const totalRecords = placementData.length;
+        const uniqueColleges = new Set(placementData.map(item => item.college_id)).size;
+        
+        let totalBranches = 0;
+        placementData.forEach(item => {
+          if (item.data?.branch_data) {
+            totalBranches += item.data.branch_data.length;
+          }
+        });
+
+        setStats({
+          totalRecords,
+          totalColleges: uniqueColleges,
+          totalBranches,
+          lastUpdated: new Date().toLocaleDateString()
+        });
+      }
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const processCSVData = (rawData: any[]) => {
+    // Group data by branch
+    const branchMap = new Map();
+    const companiesSet = new Set<string>();
+    
+    rawData.forEach(row => {
+      const branch = row.Branch || row.branch;
+      const students = parseInt(row['Total Students'] || row.total_students) || 0;
+      const placed = parseInt(row['Placed Students'] || row.placed) || 0;
+      const avgPackage = parseFloat(row['Average Package'] || row.avg_package) || 0;
+      const highestPackage = parseFloat(row['Highest Package'] || row.highest_package) || 0;
+      const companies = (row.Companies || row.companies || '').split(',').map((c: string) => c.trim()).filter((c: string) => c);
+      
+      companies.forEach(company => companiesSet.add(company));
+      
+      if (!branchMap.has(branch)) {
+        branchMap.set(branch, {
+          branch,
+          total_students: 0,
+          placed_students: 0,
+          highest_package: 0,
+          average_package: 0,
+          companies: []
+        });
+      }
+      
+      const branchData = branchMap.get(branch);
+      branchData.total_students += students;
+      branchData.placed_students += placed;
+      branchData.highest_package = Math.max(branchData.highest_package, highestPackage);
+      branchData.companies = [...new Set([...branchData.companies, ...companies])];
+    });
+
+    // Calculate averages
+    branchMap.forEach(branchData => {
+      const relevantRows = rawData.filter(row => (row.Branch || row.branch) === branchData.branch);
+      const totalPackageSum = relevantRows.reduce((sum, row) => {
+        const placed = parseInt(row['Placed Students'] || row.placed) || 0;
+        const avgPackage = parseFloat(row['Average Package'] || row.avg_package) || 0;
+        return sum + (placed * avgPackage);
+      }, 0);
+      
+      branchData.average_package = branchData.placed_students > 0 
+        ? totalPackageSum / branchData.placed_students 
+        : 0;
+    });
+
+    const branch_data = Array.from(branchMap.values());
+    
+    // Calculate overall stats
+    const total_students = branch_data.reduce((sum, branch) => sum + branch.total_students, 0);
+    const total_placed = branch_data.reduce((sum, branch) => sum + branch.placed_students, 0);
+    const highest_package = Math.max(...branch_data.map(branch => branch.highest_package));
+    
+    const totalPackageSum = branch_data.reduce((sum, branch) => 
+      sum + (branch.placed_students * branch.average_package), 0
+    );
+    const average_package = total_placed > 0 ? totalPackageSum / total_placed : 0;
+
+    const processedData: ProcessedData = {
+      year: new Date().getFullYear(),
+      branch_data,
+      overall_stats: {
+        total_students,
+        total_placed,
+        placement_percentage: total_students > 0 ? (total_placed / total_students) * 100 : 0,
+        total_companies: companiesSet.size,
+        highest_package,
+        average_package
+      }
+    };
+
+    return processedData;
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -35,10 +187,12 @@ const AdminDashboard = () => {
       header: true,
       complete: (results) => {
         setUploadedData(results.data);
+        const processed = processCSVData(results.data);
+        setProcessedData(processed);
         setIsUploading(false);
         toast({
-          title: 'File uploaded successfully',
-          description: `${results.data.length} records loaded from ${file.name}`,
+          title: 'File processed successfully',
+          description: `${results.data.length} records loaded and processed`,
         });
       },
       error: (error) => {
@@ -53,49 +207,135 @@ const AdminDashboard = () => {
     });
   };
 
-  const confirmImport = () => {
-    // In a real application, this would save to a database
-    localStorage.setItem('uploadedPlacementData', JSON.stringify(uploadedData));
-    
-    toast({
-      title: 'Data imported successfully',
-      description: `${uploadedData.length} records have been imported to the system`,
-    });
-    
-    setUploadedData([]);
-    setFileName('');
+  const saveToDatabase = async () => {
+    if (!processedData || !selectedCollege) {
+      toast({
+        title: 'Error',
+        description: 'Please select a college and process data first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from('placement_data')
+        .insert({
+          college_id: selectedCollege,
+          file_name: fileName,
+          data: processedData,
+          schema_info: {
+            columns: Object.keys(uploadedData[0] || {}),
+            total_rows: uploadedData.length
+          },
+          uploaded_by: user?.id
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Data saved successfully',
+        description: `Placement data has been saved to the database`,
+      });
+      
+      // Clear form
+      setUploadedData([]);
+      setProcessedData(null);
+      setFileName('');
+      setSelectedCollege('');
+      
+      // Reload stats
+      loadStats();
+      
+    } catch (error: any) {
+      console.error('Error saving data:', error);
+      toast({
+        title: 'Save failed',
+        description: error.message || 'Failed to save data to database',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const exportCurrentData = () => {
-    const csvContent = [
-      ['College', 'Branch', 'Year', 'Offers', 'Avg Package', 'Highest Package', 'Min CGPA', 'Total Students'],
-      ...placementData.map(item => [
-        item.college,
-        item.branch,
-        item.year,
-        item.offers,
-        item.avgPackage,
-        item.highestPackage,
-        item.minCGPA,
-        item.totalStudents
-      ])
-    ].map(row => row.join(',')).join('\n');
+  const exportCurrentData = async () => {
+    try {
+      const { data: placementData } = await supabase
+        .from('placement_data')
+        .select(`
+          *,
+          colleges (name, location)
+        `);
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `placement-data-export-${Date.now()}.csv`);
+      if (!placementData || placementData.length === 0) {
+        toast({
+          title: 'No data to export',
+          description: 'There is no placement data in the database',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const csvRows = ['College,Branch,Year,Total Students,Placed Students,Placement %,Avg Package,Highest Package,Companies'];
+      
+      placementData.forEach(item => {
+        const collegeName = (item.colleges as any)?.name || 'Unknown College';
+        item.data.branch_data.forEach((branch: any) => {
+          csvRows.push([
+            collegeName,
+            branch.branch,
+            item.data.year,
+            branch.total_students,
+            branch.placed_students,
+            ((branch.placed_students / branch.total_students) * 100).toFixed(2),
+            branch.average_package.toFixed(2),
+            branch.highest_package,
+            branch.companies.join('; ')
+          ].join(','));
+        });
+      });
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      saveAs(blob, `placement-data-export-${Date.now()}.csv`);
+      
+      toast({
+        title: 'Export successful',
+        description: 'Placement data exported successfully',
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export data',
+        variant: 'destructive',
+      });
+    }
   };
 
   const clearUpload = () => {
     setUploadedData([]);
+    setProcessedData(null);
     setFileName('');
+    setSelectedCollege('');
   };
 
-  const stats = {
-    totalRecords: placementData.length,
-    totalColleges: new Set(placementData.map(item => item.college)).size,
-    totalBranches: new Set(placementData.map(item => item.branch)).size,
-    lastUpdated: new Date().toLocaleDateString()
-  };
+  if (userRole !== 'admin') {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="pt-6 text-center">
+            <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-20">
@@ -103,7 +343,13 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold gradient-text mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage placement data and system configuration</p>
+          <p className="text-muted-foreground">Manage placement data for your institution</p>
+          {userProfile?.college_name && (
+            <div className="flex items-center mt-2 text-sm text-primary">
+              <Building className="h-4 w-4 mr-2" />
+              {userProfile.college_name}
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -136,7 +382,7 @@ const AdminDashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Branches</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Branches</p>
                   <p className="text-2xl font-bold text-foreground">{stats.totalBranches}</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-primary" />
@@ -163,17 +409,33 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Upload className="h-5 w-5 text-primary" />
-                <span>Upload CSV Data</span>
+                <span>Upload Placement Data</span>
               </CardTitle>
               <CardDescription>Upload placement data in CSV format</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="college-select">Select College</Label>
+                <Select value={selectedCollege} onValueChange={setSelectedCollege}>
+                  <SelectTrigger className="glass-effect border-white/20">
+                    <SelectValue placeholder="Choose a college" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colleges.map((college) => (
+                      <SelectItem key={college.id} value={college.id}>
+                        {college.name} {college.location && `- ${college.location}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="csvFile">Select CSV File</Label>
                 <Input
                   id="csvFile"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   onChange={handleFileUpload}
                   className="glass-effect border-white/20"
                   disabled={isUploading}
@@ -189,27 +451,46 @@ const AdminDashboard = () => {
 
               {isUploading && (
                 <div className="flex items-center space-x-2 text-sm text-primary">
-                  <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Processing file...</span>
                 </div>
               )}
 
-              {uploadedData.length > 0 && (
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={confirmImport}
-                    className="btn-hover bg-gradient-primary hover:opacity-90 text-white border-0"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Confirm Import ({uploadedData.length} records)
-                  </Button>
-                  <Button
-                    onClick={clearUpload}
-                    variant="outline"
-                    className="glass-effect border-destructive/30 hover:border-destructive/50 hover:bg-destructive/10"
-                  >
-                    Clear
-                  </Button>
+              {processedData && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <div className="text-sm text-green-400 font-medium">Data Processed Successfully</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {processedData.overall_stats.total_students} students, {processedData.overall_stats.total_placed} placed ({processedData.overall_stats.placement_percentage.toFixed(1)}% placement rate)
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={saveToDatabase}
+                      disabled={isSaving || !selectedCollege}
+                      className="btn-hover bg-gradient-primary hover:opacity-90 text-white border-0"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Save to Database
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={clearUpload}
+                      variant="outline"
+                      className="glass-effect border-destructive/30 hover:border-destructive/50 hover:bg-destructive/10"
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -221,7 +502,7 @@ const AdminDashboard = () => {
                 <Download className="h-5 w-5 text-primary" />
                 <span>Export Data</span>
               </CardTitle>
-              <CardDescription>Download current placement data</CardDescription>
+              <CardDescription>Download placement data from database</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Button
@@ -233,7 +514,7 @@ const AdminDashboard = () => {
               </Button>
               
               <div className="text-sm text-muted-foreground">
-                <p>This will export all placement records currently in the system.</p>
+                <p>This will export all placement records from the database.</p>
               </div>
             </CardContent>
           </Card>
@@ -245,10 +526,10 @@ const AdminDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <AlertCircle className="h-5 w-5 text-orange-500" />
-                <span>Data Preview</span>
+                <span>Raw Data Preview</span>
               </CardTitle>
               <CardDescription>
-                Preview of uploaded data ({uploadedData.length} records)
+                Preview of uploaded CSV data ({uploadedData.length} records)
               </CardDescription>
             </CardHeader>
             <CardContent>

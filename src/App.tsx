@@ -10,7 +10,7 @@ import Footer from "./components/Footer";
 
 // Pages
 import Home from "./pages/Home";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import OverviewDashboard from "./pages/OverviewDashboard";
 import Compare from "./pages/Compare";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -32,12 +32,20 @@ const App = () => (
             <Navbar />
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/auth" element={<Auth />} />
               <Route path="/overview" element={<OverviewDashboard />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/colleges" element={<AllColleges />} />
               <Route path="/college/:collegeId" element={<CollegeDashboard />} />
               <Route path="/live-monitor" element={<RealTimeMonitor />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <CollegeDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/admin" 
                 element={
